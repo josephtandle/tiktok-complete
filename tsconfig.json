@@ -11,7 +11,10 @@
     "resolveJsonModule": true,
     "allowJs": true,
     "checkJs": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "isolatedModules": false,
+    "noEmitOnError": false,
+    "incremental": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

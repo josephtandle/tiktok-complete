@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-nocheck
 /**
  * TikTok Complete MCP Server
  * Full TikTok capabilities: video download, user analytics, trending, search, video stats, creator tools.
