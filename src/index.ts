@@ -8,11 +8,11 @@
  *   PORT            - HTTP port (default: 8080)
  */
 
-const express = require('express');
-const fetch = require('node-fetch');
-const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
-const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
-const { z } = require('zod');
+import express from 'express';
+import nodeFetch from 'node-fetch';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { z } from 'zod';
 
 // ---------- Config ----------
 
@@ -21,11 +21,10 @@ const TIKTOK_API_KEY = process.env.TIKTOK_API_KEY || '';
 
 const TT_VIDEO_HOST = 'tiktok-full-video-info-without-watermark.p.rapidapi.com';
 const TT_USER_HOST = 'tiktok-scraper7.p.rapidapi.com';
-const TT_TREND_HOST = 'tiktok-scraper7.p.rapidapi.com';
 
 // ---------- API Helpers ----------
 
-async function rapidFetch(host, path, params = {}) {
+async function rapidFetch(host: string, path: string, params: Record<string, any> = {}): Promise<any> {
   if (!TIKTOK_API_KEY) {
     throw new Error('TIKTOK_API_KEY environment variable is not set. Get a RapidAPI key at rapidapi.com.');
   }
@@ -35,7 +34,7 @@ async function rapidFetch(host, path, params = {}) {
     if (v !== undefined && v !== null) url.searchParams.set(k, String(v));
   }
 
-  const res = await fetch(url.toString(), {
+  const res = await nodeFetch(url.toString(), {
     headers: {
       'X-RapidAPI-Key': TIKTOK_API_KEY,
       'X-RapidAPI-Host': host
@@ -50,7 +49,7 @@ async function rapidFetch(host, path, params = {}) {
   return res.json();
 }
 
-async function videoApiFetch(tiktokUrl) {
+async function videoApiFetch(tiktokUrl: string): Promise<any> {
   const url = new URL(`https://${TT_VIDEO_HOST}/`);
   url.searchParams.set('url', tiktokUrl);
 
@@ -58,7 +57,7 @@ async function videoApiFetch(tiktokUrl) {
     throw new Error('TIKTOK_API_KEY environment variable is not set.');
   }
 
-  const res = await fetch(url.toString(), {
+  const res = await nodeFetch(url.toString(), {
     headers: {
       'X-RapidAPI-Key': TIKTOK_API_KEY,
       'X-RapidAPI-Host': TT_VIDEO_HOST
@@ -73,7 +72,7 @@ async function videoApiFetch(tiktokUrl) {
   return res.json();
 }
 
-function formatCount(n) {
+function formatCount(n: any): number | null {
   if (n === null || n === undefined) return null;
   return Number(n);
 }
@@ -93,11 +92,11 @@ server.tool(
   {
     tiktok_url: z.string().url().describe('Full TikTok video URL, e.g. https://www.tiktok.com/@username/video/1234567890')
   },
-  async ({ tiktok_url }) => {
+  async ({ tiktok_url }: { tiktok_url: string }) => {
     const data = await videoApiFetch(tiktok_url);
     const hdUrl = data.hdplay || data.play || null;
     if (!hdUrl) {
-      return { content: [{ type: 'text', text: JSON.stringify({ error: 'No video URL found. The video may be private or unavailable.', raw: data }, null, 2) }] };
+      return { content: [{ type: 'text' as const, text: JSON.stringify({ error: 'No video URL found. The video may be private or unavailable.', raw: data }, null, 2) }] };
     }
     const result = {
       download_url: hdUrl,
@@ -108,7 +107,7 @@ server.tool(
       title: data.title || null,
       duration_seconds: data.duration || null
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -118,7 +117,7 @@ server.tool(
   {
     tiktok_url: z.string().url().describe('Full TikTok video URL')
   },
-  async ({ tiktok_url }) => {
+  async ({ tiktok_url }: { tiktok_url: string }) => {
     const data = await videoApiFetch(tiktok_url);
     const result = {
       title: data.title || null,
@@ -147,7 +146,7 @@ server.tool(
       created_at: data.create_time ? new Date(data.create_time * 1000).toISOString() : null,
       hashtags: (data.desc || '').match(/#\w+/g) || []
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -157,9 +156,9 @@ server.tool(
   {
     tiktok_url: z.string().url().describe('Full TikTok video URL')
   },
-  async ({ tiktok_url }) => {
+  async ({ tiktok_url }: { tiktok_url: string }) => {
     const data = await videoApiFetch(tiktok_url);
-    return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(data, null, 2) }] };
   }
 );
 
@@ -171,7 +170,7 @@ server.tool(
   {
     username: z.string().min(1).describe('TikTok username without @ symbol, e.g. "charlidamelio"')
   },
-  async ({ username }) => {
+  async ({ username }: { username: string }) => {
     const data = await rapidFetch(TT_USER_HOST, '/user/info', { unique_id: username });
     const user = data.data?.user || data.userInfo?.user || data;
     const stats = data.data?.stats || data.userInfo?.stats || {};
@@ -191,7 +190,7 @@ server.tool(
       region: user.region || null,
       language: user.language || null
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -203,9 +202,9 @@ server.tool(
     count: z.number().int().min(1).max(100).default(20).describe('Number of videos to fetch (1-100, default 20)'),
     cursor: z.string().optional().describe('Pagination cursor from previous response for loading more videos')
   },
-  async ({ username, count, cursor }) => {
-    const params = { unique_id: username, count: count };
-    if (cursor) params.cursor = cursor;
+  async ({ username, count, cursor }: { username: string; count: number; cursor?: string }) => {
+    const params: Record<string, any> = { unique_id: username, count };
+    if (cursor) params['cursor'] = cursor;
     const data = await rapidFetch(TT_USER_HOST, '/user/posts', params);
     const videos = data.data?.videos || data.itemList || data.items || [];
     const result = {
@@ -213,7 +212,7 @@ server.tool(
       video_count: videos.length,
       has_more: data.data?.hasMore || data.hasMore || false,
       next_cursor: data.data?.cursor || data.cursor || null,
-      videos: videos.map(v => ({
+      videos: videos.map((v: any) => ({
         id: v.id || v.video_id || null,
         title: v.title || v.desc || null,
         duration_seconds: v.video?.duration || v.duration || null,
@@ -228,7 +227,7 @@ server.tool(
         created_at: v.createTime ? new Date(v.createTime * 1000).toISOString() : null
       }))
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -240,9 +239,9 @@ server.tool(
     count: z.number().int().min(1).max(200).default(50).describe('Number of followers to fetch (1-200, default 50)'),
     min_cursor: z.string().optional().describe('Pagination cursor for next page of followers')
   },
-  async ({ username, count, min_cursor }) => {
-    const params = { unique_id: username, count };
-    if (min_cursor) params.min_cursor = min_cursor;
+  async ({ username, count, min_cursor }: { username: string; count: number; min_cursor?: string }) => {
+    const params: Record<string, any> = { unique_id: username, count };
+    if (min_cursor) params['min_cursor'] = min_cursor;
     const data = await rapidFetch(TT_USER_HOST, '/user/followers', params);
     const followers = data.data?.followers || data.followers || [];
     const result = {
@@ -250,7 +249,7 @@ server.tool(
       fetched_count: followers.length,
       has_more: data.data?.hasMore || data.hasMore || false,
       next_cursor: data.data?.minCursor || data.minCursor || null,
-      followers: followers.map(f => ({
+      followers: followers.map((f: any) => ({
         username: f.uniqueId || null,
         nickname: f.nickname || null,
         avatar: f.avatarMedium || null,
@@ -258,7 +257,7 @@ server.tool(
         follower_count: formatCount(f.followerCount)
       }))
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -270,9 +269,9 @@ server.tool(
     count: z.number().int().min(1).max(200).default(50).describe('Number of following accounts to fetch (1-200, default 50)'),
     min_cursor: z.string().optional().describe('Pagination cursor for next page')
   },
-  async ({ username, count, min_cursor }) => {
-    const params = { unique_id: username, count };
-    if (min_cursor) params.min_cursor = min_cursor;
+  async ({ username, count, min_cursor }: { username: string; count: number; min_cursor?: string }) => {
+    const params: Record<string, any> = { unique_id: username, count };
+    if (min_cursor) params['min_cursor'] = min_cursor;
     const data = await rapidFetch(TT_USER_HOST, '/user/following', params);
     const following = data.data?.following || data.following || [];
     const result = {
@@ -280,7 +279,7 @@ server.tool(
       fetched_count: following.length,
       has_more: data.data?.hasMore || data.hasMore || false,
       next_cursor: data.data?.minCursor || data.minCursor || null,
-      following: following.map(f => ({
+      following: following.map((f: any) => ({
         username: f.uniqueId || null,
         nickname: f.nickname || null,
         avatar: f.avatarMedium || null,
@@ -288,7 +287,7 @@ server.tool(
         follower_count: formatCount(f.followerCount)
       }))
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -301,13 +300,13 @@ server.tool(
     region: z.string().length(2).default('US').describe('Two-letter country code for regional trends (US, GB, AU, etc.)'),
     count: z.number().int().min(1).max(50).default(20).describe('Number of trending videos (1-50, default 20)')
   },
-  async ({ region, count }) => {
-    const data = await rapidFetch(TT_TREND_HOST, '/trending/feed', { region, count });
+  async ({ region, count }: { region: string; count: number }) => {
+    const data = await rapidFetch(TT_USER_HOST, '/trending/feed', { region, count });
     const videos = data.data || data.itemList || data.items || [];
     const result = {
       region,
       trending_count: videos.length,
-      videos: videos.map((v, i) => ({
+      videos: videos.map((v: any, i: number) => ({
         rank: i + 1,
         id: v.id || null,
         title: v.desc || v.title || null,
@@ -323,7 +322,7 @@ server.tool(
         music: v.music?.title || null
       }))
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -333,13 +332,13 @@ server.tool(
   {
     region: z.string().length(2).default('US').describe('Two-letter country code (US, GB, CA, AU, etc.)')
   },
-  async ({ region }) => {
-    const data = await rapidFetch(TT_TREND_HOST, '/trending/hashtags', { region });
+  async ({ region }: { region: string }) => {
+    const data = await rapidFetch(TT_USER_HOST, '/trending/hashtags', { region });
     const tags = data.data || data.hashtags || [];
     const result = {
       region,
       hashtag_count: tags.length,
-      hashtags: tags.map((t, i) => ({
+      hashtags: tags.map((t: any, i: number) => ({
         rank: i + 1,
         name: t.name || t.hashtag_name || null,
         video_count: formatCount(t.video_count || t.videoCount),
@@ -347,7 +346,7 @@ server.tool(
         description: t.desc || null
       }))
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -357,13 +356,13 @@ server.tool(
   {
     region: z.string().length(2).default('US').describe('Two-letter country code (US, GB, CA, etc.)')
   },
-  async ({ region }) => {
-    const data = await rapidFetch(TT_TREND_HOST, '/trending/music', { region });
+  async ({ region }: { region: string }) => {
+    const data = await rapidFetch(TT_USER_HOST, '/trending/music', { region });
     const sounds = data.data || data.music || data.sounds || [];
     const result = {
       region,
       sound_count: sounds.length,
-      sounds: sounds.map((s, i) => ({
+      sounds: sounds.map((s: any, i: number) => ({
         rank: i + 1,
         id: s.id || null,
         title: s.title || s.name || null,
@@ -373,7 +372,7 @@ server.tool(
         cover: s.coverMedium || s.cover || null
       }))
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -387,9 +386,9 @@ server.tool(
     count: z.number().int().min(1).max(50).default(20).describe('Number of results (1-50, default 20)'),
     cursor: z.string().optional().describe('Pagination cursor for next page of results')
   },
-  async ({ query, count, cursor }) => {
-    const params = { keywords: query, count };
-    if (cursor) params.cursor = cursor;
+  async ({ query, count, cursor }: { query: string; count: number; cursor?: string }) => {
+    const params: Record<string, any> = { keywords: query, count };
+    if (cursor) params['cursor'] = cursor;
     const data = await rapidFetch(TT_USER_HOST, '/feed/search', params);
     const videos = data.data?.videos || data.itemList || data.items || [];
     const result = {
@@ -397,7 +396,7 @@ server.tool(
       result_count: videos.length,
       has_more: data.data?.hasMore || data.hasMore || false,
       next_cursor: data.data?.cursor || data.cursor || null,
-      videos: videos.map(v => ({
+      videos: videos.map((v: any) => ({
         id: v.id || null,
         title: v.desc || v.title || null,
         author: v.author?.uniqueId || null,
@@ -413,7 +412,7 @@ server.tool(
         created_at: v.createTime ? new Date(v.createTime * 1000).toISOString() : null
       }))
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -425,9 +424,9 @@ server.tool(
     count: z.number().int().min(1).max(50).default(20).describe('Number of results (1-50, default 20)'),
     cursor: z.string().optional().describe('Pagination cursor for next page')
   },
-  async ({ query, count, cursor }) => {
-    const params = { keywords: query, count };
-    if (cursor) params.cursor = cursor;
+  async ({ query, count, cursor }: { query: string; count: number; cursor?: string }) => {
+    const params: Record<string, any> = { keywords: query, count };
+    if (cursor) params['cursor'] = cursor;
     const data = await rapidFetch(TT_USER_HOST, '/search/user', params);
     const users = data.data?.users || data.userList || data.users || [];
     const result = {
@@ -435,7 +434,7 @@ server.tool(
       result_count: users.length,
       has_more: data.data?.hasMore || data.hasMore || false,
       next_cursor: data.data?.cursor || data.cursor || null,
-      users: users.map(u => {
+      users: users.map((u: any) => {
         const user = u.user || u;
         const stats = u.stats || {};
         return {
@@ -452,7 +451,7 @@ server.tool(
         };
       })
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -463,14 +462,14 @@ server.tool(
     query: z.string().min(1).describe('Hashtag search term (with or without #), e.g. "fitness", "cooking", "travel"'),
     count: z.number().int().min(1).max(50).default(20).describe('Number of results (1-50, default 20)')
   },
-  async ({ query, count }) => {
+  async ({ query, count }: { query: string; count: number }) => {
     const cleanQuery = query.replace(/^#/, '');
     const data = await rapidFetch(TT_USER_HOST, '/search/challenge', { keywords: cleanQuery, count });
     const hashtags = data.data?.challenges || data.challengeList || data.hashtags || [];
     const result = {
       query: cleanQuery,
       result_count: hashtags.length,
-      hashtags: hashtags.map(h => {
+      hashtags: hashtags.map((h: any) => {
         const ch = h.challengeInfo?.challenge || h.challenge || h;
         const stats = h.challengeInfo?.stats || h.stats || {};
         return {
@@ -481,7 +480,7 @@ server.tool(
         };
       })
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -495,9 +494,9 @@ server.tool(
     count: z.number().int().min(1).max(100).default(20).describe('Number of comments to fetch (1-100, default 20)'),
     cursor: z.string().optional().describe('Pagination cursor for next page of comments')
   },
-  async ({ video_id, count, cursor }) => {
-    const params = { video_id, count };
-    if (cursor) params.cursor = cursor;
+  async ({ video_id, count, cursor }: { video_id: string; count: number; cursor?: string }) => {
+    const params: Record<string, any> = { video_id, count };
+    if (cursor) params['cursor'] = cursor;
     const data = await rapidFetch(TT_USER_HOST, '/video/comments', params);
     const comments = data.data?.comments || data.comments || [];
     const result = {
@@ -506,7 +505,7 @@ server.tool(
       total_comments: formatCount(data.data?.total || data.total),
       has_more: data.data?.hasMore || data.hasMore || false,
       next_cursor: data.data?.cursor || data.cursor || null,
-      comments: comments.map(c => ({
+      comments: comments.map((c: any) => ({
         id: c.cid || c.id || null,
         text: c.text || null,
         author: c.user?.uniqueId || null,
@@ -515,7 +514,7 @@ server.tool(
         created_at: c.create_time ? new Date(c.create_time * 1000).toISOString() : null
       }))
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -527,9 +526,9 @@ server.tool(
     count: z.number().int().min(1).max(100).default(50).describe('Number of likers to fetch (1-100, default 50)'),
     cursor: z.string().optional().describe('Pagination cursor for next page')
   },
-  async ({ video_id, count, cursor }) => {
-    const params = { video_id, count };
-    if (cursor) params.cursor = cursor;
+  async ({ video_id, count, cursor }: { video_id: string; count: number; cursor?: string }) => {
+    const params: Record<string, any> = { video_id, count };
+    if (cursor) params['cursor'] = cursor;
     const data = await rapidFetch(TT_USER_HOST, '/video/digg', params);
     const users = data.data?.users || data.users || [];
     const result = {
@@ -537,24 +536,24 @@ server.tool(
       fetched_count: users.length,
       has_more: data.data?.hasMore || data.hasMore || false,
       next_cursor: data.data?.cursor || data.cursor || null,
-      users: users.map(u => ({
+      users: users.map((u: any) => ({
         username: u.uniqueId || null,
         nickname: u.nickname || null,
         verified: u.verified || false,
         follower_count: formatCount(u.followerCount)
       }))
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
 server.tool(
   'get_video_shares',
-  'Get share count and platform breakdown for a TikTok video by URL. Returns share statistics from video metadata. Example: get_video_shares("https://www.tiktok.com/@user/video/7123456789012345678")',
+  'Get share count and engagement stats for a TikTok video by URL. Example: get_video_shares("https://www.tiktok.com/@user/video/7123456789012345678")',
   {
     tiktok_url: z.string().url().describe('Full TikTok video URL')
   },
-  async ({ tiktok_url }) => {
+  async ({ tiktok_url }: { tiktok_url: string }) => {
     const data = await videoApiFetch(tiktok_url);
     const result = {
       tiktok_url,
@@ -566,7 +565,7 @@ server.tool(
       title: data.title || null,
       note: 'TikTok API does not expose per-platform share breakdown. Total share count provided.'
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -574,13 +573,12 @@ server.tool(
 
 server.tool(
   'get_creator_analytics',
-  'Get comprehensive analytics for a TikTok creator including engagement rates, average views, and performance trends. Example: get_creator_analytics("garyvee")',
+  'Get comprehensive analytics for a TikTok creator including engagement rates, average views, and top videos. Example: get_creator_analytics("garyvee")',
   {
     username: z.string().min(1).describe('TikTok username without @ symbol'),
-    video_sample_size: z.number().int().min(5).max(50).default(20).describe('Number of recent videos to analyze for stats (5-50, default 20)')
+    video_sample_size: z.number().int().min(5).max(50).default(20).describe('Number of recent videos to analyze (5-50, default 20)')
   },
-  async ({ username, video_sample_size }) => {
-    // Fetch user profile and recent videos in parallel
+  async ({ username, video_sample_size }: { username: string; video_sample_size: number }) => {
     const [profileData, videosData] = await Promise.all([
       rapidFetch(TT_USER_HOST, '/user/info', { unique_id: username }),
       rapidFetch(TT_USER_HOST, '/user/posts', { unique_id: username, count: video_sample_size })
@@ -588,27 +586,27 @@ server.tool(
 
     const user = profileData.data?.user || profileData.userInfo?.user || {};
     const stats = profileData.data?.stats || profileData.userInfo?.stats || {};
-    const videos = videosData.data?.videos || videosData.itemList || [];
+    const videos: any[] = videosData.data?.videos || videosData.itemList || [];
 
-    const followerCount = formatCount(stats.followerCount) || 0;
-    const videoStats = videos.map(v => ({
-      views: v.stats?.playCount || 0,
-      likes: v.stats?.diggCount || 0,
-      comments: v.stats?.commentCount || 0,
-      shares: v.stats?.shareCount || 0
+    const followerCount: number = Number(stats.followerCount) || 0;
+    const videoStats = videos.map((v: any) => ({
+      views: Number(v.stats?.playCount) || 0,
+      likes: Number(v.stats?.diggCount) || 0,
+      comments: Number(v.stats?.commentCount) || 0,
+      shares: Number(v.stats?.shareCount) || 0
     }));
 
     const avgViews = videoStats.length > 0 ? Math.round(videoStats.reduce((s, v) => s + v.views, 0) / videoStats.length) : null;
     const avgLikes = videoStats.length > 0 ? Math.round(videoStats.reduce((s, v) => s + v.likes, 0) / videoStats.length) : null;
     const avgComments = videoStats.length > 0 ? Math.round(videoStats.reduce((s, v) => s + v.comments, 0) / videoStats.length) : null;
-    const avgEngagement = followerCount > 0 && avgLikes !== null
+    const avgEngagement = followerCount > 0 && avgLikes !== null && avgComments !== null
       ? parseFloat(((avgLikes + avgComments) / followerCount * 100).toFixed(2))
       : null;
 
-    const topVideos = videos
-      .sort((a, b) => (b.stats?.playCount || 0) - (a.stats?.playCount || 0))
+    const topVideos = [...videos]
+      .sort((a: any, b: any) => (Number(b.stats?.playCount) || 0) - (Number(a.stats?.playCount) || 0))
       .slice(0, 5)
-      .map(v => ({
+      .map((v: any) => ({
         title: v.desc || null,
         views: formatCount(v.stats?.playCount),
         likes: formatCount(v.stats?.diggCount),
@@ -639,7 +637,7 @@ server.tool(
       },
       top_videos: topVideos
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -650,7 +648,7 @@ server.tool(
     username: z.string().min(1).describe('TikTok username without @ symbol'),
     follower_sample: z.number().int().min(10).max(100).default(50).describe('Number of followers to sample for demographic analysis (10-100, default 50)')
   },
-  async ({ username, follower_sample }) => {
+  async ({ username, follower_sample }: { username: string; follower_sample: number }) => {
     const [profileData, followersData, videosData] = await Promise.all([
       rapidFetch(TT_USER_HOST, '/user/info', { unique_id: username }),
       rapidFetch(TT_USER_HOST, '/user/followers', { unique_id: username, count: follower_sample }),
@@ -658,20 +656,18 @@ server.tool(
     ]);
 
     const stats = profileData.data?.stats || profileData.userInfo?.stats || {};
-    const followers = followersData.data?.followers || followersData.followers || [];
-    const videos = videosData.data?.videos || videosData.itemList || [];
+    const followers: any[] = followersData.data?.followers || followersData.followers || [];
+    const videos: any[] = videosData.data?.videos || videosData.itemList || [];
 
-    // Analyze follower verification rates and follower counts of followers
-    const verifiedFollowers = followers.filter(f => f.verified).length;
-    const followerFollowerCounts = followers.map(f => f.followerCount || 0).filter(c => c > 0);
+    const verifiedFollowers = followers.filter((f: any) => f.verified).length;
+    const followerFollowerCounts: number[] = followers.map((f: any) => Number(f.followerCount) || 0).filter(c => c > 0);
     const avgFollowerFollowers = followerFollowerCounts.length > 0
       ? Math.round(followerFollowerCounts.reduce((s, c) => s + c, 0) / followerFollowerCounts.length)
       : null;
 
-    // Analyze content themes from video descriptions
-    const allDesc = videos.map(v => v.desc || '').join(' ');
+    const allDesc = videos.map((v: any) => v.desc || '').join(' ');
     const hashtagMatches = allDesc.match(/#\w+/g) || [];
-    const hashtagFreq = {};
+    const hashtagFreq: Record<string, number> = {};
     for (const tag of hashtagMatches) {
       hashtagFreq[tag] = (hashtagFreq[tag] || 0) + 1;
     }
@@ -679,6 +675,10 @@ server.tool(
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
       .map(([tag, count]) => ({ tag, usage_count: count }));
+
+    const followerCount = Number(stats.followerCount) || 0;
+    const heartCount = Number(stats.heartCount) || 0;
+    const videoCount = Number(stats.videoCount) || 0;
 
     const result = {
       username,
@@ -698,12 +698,12 @@ server.tool(
       },
       engagement_quality: {
         total_likes: formatCount(stats.heartCount),
-        avg_likes_per_follower: stats.followerCount && stats.heartCount && stats.videoCount
-          ? parseFloat((stats.heartCount / stats.followerCount).toFixed(2))
+        avg_likes_per_follower: followerCount > 0 && heartCount > 0 && videoCount > 0
+          ? parseFloat((heartCount / followerCount).toFixed(2))
           : null
       }
     };
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
   }
 );
 
@@ -712,11 +712,11 @@ server.tool(
 const app = express();
 app.use(express.json());
 
-app.get('/health', (req, res) => {
+app.get('/health', (_req: any, res: any) => {
   res.json({ status: 'ok', server: 'tiktok-complete', version: '1.0.0' });
 });
 
-app.all('/mcp', async (req, res) => {
+app.all('/mcp', async (req: any, res: any) => {
   const transport = new StreamableHTTPServerTransport({
     sessionIdGenerator: undefined
   });
