@@ -1,0 +1,18 @@
+name: tiktok-complete
+display_name: "TikTok Complete"
+description: "Complete TikTok MCP server. Download watermark-free videos, track trends, analyze creators, and research hashtags — all from your AI assistant."
+tagline: "Stop manually downloading TikTok videos."
+version: 1
+runtime: typescript
+env:
+  - name: TIKTOK_API_KEY
+    description: RapidAPI key for TikTok API access
+    required: true
+tags:
+  - tiktok
+  - social-media
+  - video-download
+  - analytics
+  - trending
+  - content-creation
+  - automation
